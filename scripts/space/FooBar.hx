@@ -3,4 +3,8 @@ package space;
 class FooBar {
   public function new() {
   }
+
+  public function test() {
+    trace("success!");
+  }
 }

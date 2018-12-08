@@ -3,3 +3,7 @@
 -main Runtime
 -cpp main
 -D scriptable
+-D hscriptPos
+-lib ihx
+-resource src/ihx/IhxASTFormatter.hx@formatterclass
+-lib hx-color-trace

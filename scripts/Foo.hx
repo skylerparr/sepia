@@ -7,6 +7,6 @@ class Foo implements MasterFoo {
   }
 
   public function bar(): String {
-    return "renewed bar";
+    return "just bar this time";
   }
 }

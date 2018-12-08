@@ -19,8 +19,12 @@ class ObjectFactory {
     }
     var retVal = null;
     var className: String = classMap.get(clazz);
-    var clazz = Type.resolveClass(className);
-    retVal = Type.createInstance(clazz, []);
+    if(className != null) {
+      var clazz = Type.resolveClass(className);
+      retVal = Type.createInstance(clazz, []);
+    } else {
+      retVal = Type.createInstance(clazz, []);
+    }
 
     return retVal;
   }
