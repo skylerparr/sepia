@@ -1,0 +1,4 @@
+-cp src
+-main CompilerMain
+-cpp Compiler
+-lib hx-color-trace

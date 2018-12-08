@@ -1,0 +1,4 @@
+-main Foo
+-cp scripts
+-cp common
+-cppia out/Main.cppia

@@ -1,0 +1,5 @@
+-cp src
+-cp common
+-main Runtime
+-cpp main
+-D scriptable
