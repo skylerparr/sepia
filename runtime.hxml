@@ -7,3 +7,4 @@
 -lib ihx
 -resource src/ihx/IhxASTFormatter.hx@formatterclass
 -lib hx-color-trace
+-lib hscript

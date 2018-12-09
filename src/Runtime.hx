@@ -27,6 +27,9 @@ class Runtime {
     });
 
     HScriptEval.interp.variables.set("c", compile);
+    HScriptEval.interp.variables.set("Macro", hscript.Macro);
+    HScriptEval.interp.variables.set("Parser", hscript.Parser);
+    HScriptEval.interp.variables.set("Interp", hscript.Interp);
 
     Thread.readMessage(true);
   }
