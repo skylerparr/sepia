@@ -1,48 +1,70 @@
 package ;
 
+import core.ObjectFactory;
+import core.ScriptMacros;
+import haxe.macro.Expr.Position;
+import hscript.Parser;
+import hscript.Interp;
+import hscript.Macro;
 import comp.CPPIACompiler;
-import cpp.vm.Thread;
+import cpp.cppia.Module;
 import ihx.HScriptEval;
 import ihx.IHx;
 import sys.FileSystem;
-import core.ObjectFactory;
-import haxe.ds.ObjectMap;
 import sys.io.File;
-import cpp.cppia.Module;
 class Runtime {
-  public static function main() {
-    trace("starting runtime");
-    new ObjectFactory();
 
-    load();
+  private static var src: String;
+  private static var output: String;
+  private static var classPaths: Array<String>;
 
-//    var script: String = "out/Main.cppia";
-//    var code: String = File.getContent(script);
-//    var module: Module = Module.fromString(code);
-//
-//    module.run();
+  public static function main(src: String, output: String, classPaths: Array<String>) {
+    ScriptMacros;
+    ObjectFactory;
 
-    var term: Thread = Thread.create(function() {
-      IHx.main();
+    Runtime.src = src;
+    Runtime.output = output;
+    Runtime.classPaths = classPaths;
+
+    var variables = HScriptEval.interp.variables;
+
+    variables.set("recompile", recompile);
+    variables.set("Type", Type);
+    variables.set("Macro", hscript.Macro);
+    variables.set("Parser", hscript.Parser);
+    variables.set("Interp", hscript.Interp);
+
+    var parser: Parser = new Parser();
+    var interp: Interp = new Interp();
+    var pos: Position = {file: "Runtime.hx", min: 0, max: 65535}
+    var hscriptMacro: Macro = new Macro(pos);
+
+    variables.set("eval", function(s: String): Dynamic {
+      var ast = parser.parseString(s);
+      return HScriptEval.interp.execute(ast);
     });
 
-    HScriptEval.interp.variables.set("c", compile);
-    HScriptEval.interp.variables.set("Macro", hscript.Macro);
-    HScriptEval.interp.variables.set("Parser", hscript.Parser);
-    HScriptEval.interp.variables.set("Interp", hscript.Interp);
+    variables.set("ast", function(s: String): Dynamic {
+      return parser.parseString(s);
+    });
 
-    Thread.readMessage(true);
+    variables.set("macro", function(s: String): Dynamic {
+      var ast = parser.parseString(s);
+      return hscriptMacro.convert(ast);
+    });
+
+    IHx.main();
   }
 
-  private static function compile(path: String): Void {
+  private static function recompile(): Void {
     var compiler = new CPPIACompiler();
-    compiler.compileAll(path);
+    compiler.compileAll(src, output, classPaths);
 
     load();
   }
 
   private static inline function load(): Void {
-    var path: String = "./out/";
+    var path: String = output;
     var files: Array<String> = FileSystem.readDirectory(path);
 
     for(file in files) {

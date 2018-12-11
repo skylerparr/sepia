@@ -10,6 +10,7 @@ class CPPIACompiler {
   private static var logger: Logger;
 
   private var classPath: String;
+  private var additionlClassPaths: Array<String>;
   private var outputDir: String;
 
   public function new() {
@@ -25,9 +26,19 @@ class CPPIACompiler {
     return 0;
   }
 
-  public function compileAll(path: String): Int {
+  public function compileAll(path: String, out: String, classPaths: Array<String> = null): Int {
     classPath = path + "/";
-    outputDir = "./out/";
+    outputDir = out;
+
+    if(classPaths == null) {
+      classPaths = [];
+    }
+
+    this.additionlClassPaths = [];
+    for(cp in classPaths) {
+      additionlClassPaths.push("-cp");
+      additionlClassPaths.push(cp);
+    }
     logger.debug('classPath: ${classPath}');
 
     FileSystem.createDirectory(outputDir);
@@ -69,7 +80,10 @@ class CPPIACompiler {
     }
     logger.info('${filePath}');
     var compileArgs: Array<String> =
-    ["-main", mainName, "-cp", classPath, "-cp", "common", "-cppia", filePath];
+    ["-main", mainName, "-cp", classPath, "-cppia", filePath];
+    for(cp in additionlClassPaths) {
+      compileArgs.push(cp);
+    }
 
     logger.debug(compileArgs + "");
     var p: Process = new Process("haxe", compileArgs);
