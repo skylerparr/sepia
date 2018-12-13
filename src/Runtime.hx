@@ -56,6 +56,8 @@ class Runtime {
       return hscriptMacro.convert(ast);
     });
 
+    recompile();
+
     IHx.main();
   }
 
