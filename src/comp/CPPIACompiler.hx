@@ -10,8 +10,9 @@ class CPPIACompiler {
   private static var logger: Logger;
 
   private var classPath: String;
-  private var additionlClassPaths: Array<String>;
+  private var additionalClassPaths: Array<String>;
   private var outputDir: String;
+  private var libs: Array<String>;
 
   public function new() {
     TraceLogger.logLevel = LogLevels.INFO;
@@ -21,12 +22,12 @@ class CPPIACompiler {
   public function clean(path: String): Int {
     var toDelete: Array<String> = FileSystem.readDirectory(path);
     for(file in toDelete) {
-      trace(toDelete);
+      trace(file);
     }
     return 0;
   }
 
-  public function compileAll(path: String, out: String, classPaths: Array<String> = null): Int {
+  public function compileAll(path: String, out: String, classPaths: Array<String> = null, usrlibs: Array<String> = null): Array<String> {
     classPath = path + "/";
     outputDir = out;
 
@@ -34,21 +35,29 @@ class CPPIACompiler {
       classPaths = [];
     }
 
-    this.additionlClassPaths = [];
+    this.additionalClassPaths = [];
     for(cp in classPaths) {
-      additionlClassPaths.push("-cp");
-      additionlClassPaths.push(cp);
+      additionalClassPaths.push("-cp");
+      additionalClassPaths.push(cp);
     }
     logger.debug('classPath: ${classPath}');
 
+    this.libs = [];
+    for(lib in usrlibs) {
+      libs.push("-lib");
+      libs.push(lib);
+    }
+    logger.debug('libs: ${libs}');
+
     FileSystem.createDirectory(outputDir);
 
-    var exitCode: Int = doCompileAll(path);
+    var newFiles: Array<String> = [];
+    doCompileAll(path, newFiles);
 
-    return exitCode;
+    return newFiles;
   }
 
-  private function doCompileAll(path: String): Int {
+  private function doCompileAll(path: String, newFiles: Array<String>): Int {
     var exitCode: Int = 0;
     var scriptsToCompile: Array<String> = FileSystem.readDirectory(path);
     for (script in scriptsToCompile) {
@@ -58,10 +67,11 @@ class CPPIACompiler {
       logger.debug(fullPath);
       logger.debug(FileSystem.isDirectory(fullPath) + "");
       if(FileSystem.isDirectory(fullPath)) {
-        exitCode = doCompileAll(relPath);
+        exitCode = doCompileAll(relPath, newFiles);
       } else {
         var scriptPath: String = StringTools.replace(relPath, classPath, "");
         logger.debug('Path args: ${scriptPath}');
+        newFiles.push(scriptPath);
         exitCode = compileFile('${scriptPath}');
       }
       if(exitCode == 1) {
@@ -81,8 +91,11 @@ class CPPIACompiler {
     logger.info('${filePath}');
     var compileArgs: Array<String> =
     ["-main", mainName, "-cp", classPath, "-cppia", filePath];
-    for(cp in additionlClassPaths) {
+    for(cp in additionalClassPaths) {
       compileArgs.push(cp);
+    }
+    for(lib in libs) {
+      compileArgs.push(lib);
     }
 
     logger.debug(compileArgs + "");

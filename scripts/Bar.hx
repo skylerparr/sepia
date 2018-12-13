@@ -1,7 +1,7 @@
 package;
 
 import core.ScriptMacros;
-import core.ObjectFactory;
+import core.CppiaObjectFactory;
 import api.MasterFoo;
 import api.MasterBar;
 
@@ -12,7 +12,7 @@ class Bar implements MasterBar {
   }
 
   public function getFoo():MasterFoo {
-    var f = new ObjectFactory();
+    var f = new CppiaObjectFactory();
     var retVal = f.createInstance(MasterFoo);
     return retVal;
   }

@@ -1,7 +1,7 @@
 package core;
 
 import haxe.ds.ObjectMap;
-class ObjectFactory {
+class CppiaObjectFactory {
 
   private static var classMap: ObjectMap<Dynamic, String>;
 

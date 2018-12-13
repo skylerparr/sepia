@@ -1,6 +1,6 @@
 package ;
 
-import core.ObjectFactory;
+import core.CppiaObjectFactory;
 import core.ScriptMacros;
 import haxe.macro.Expr.Position;
 import hscript.Parser;
@@ -17,18 +17,21 @@ class Runtime {
   private static var src: String;
   private static var output: String;
   private static var classPaths: Array<String>;
+  private static var libs: Array<String>;
 
-  public static function main(src: String, output: String, classPaths: Array<String>) {
+  public static function main(src: String, output: String, classPaths: Array<String>, libs: Array<String>) {
     ScriptMacros;
-    ObjectFactory;
+    CppiaObjectFactory;
 
     Runtime.src = src;
     Runtime.output = output;
     Runtime.classPaths = classPaths;
+    Runtime.libs = libs;
 
     var variables = HScriptEval.interp.variables;
 
     variables.set("recompile", recompile);
+    variables.set("r", recompile);
     variables.set("Type", Type);
     variables.set("Macro", hscript.Macro);
     variables.set("Parser", hscript.Parser);
@@ -56,14 +59,31 @@ class Runtime {
     IHx.main();
   }
 
-  private static function recompile(): Void {
+  public static function recompile(): Array<String> {
     var compiler = new CPPIACompiler();
-    compiler.compileAll(src, output, classPaths);
+    var files: Array<String> = compiler.compileAll(src, output, classPaths, libs);
 
     load();
+    reloadClasses(files);
+
+    return files;
   }
 
-  private static inline function load(): Void {
+  public static function reloadClasses(files: Array<String>): Void {
+    var variables = HScriptEval.interp.variables;
+    for(file in files) {
+      var filename: String = StringTools.replace(file, ".hx", "");
+      var pack: String = StringTools.replace(filename, "/", ".");
+      var frags = pack.split(".");
+      var className = frags[frags.length - 1];
+      var clazz = Type.resolveClass(pack);
+      if(clazz != null) {
+        variables.set(className, clazz);
+      }
+    }
+  }
+
+  public static function load(): Array<String> {
     var path: String = output;
     var files: Array<String> = FileSystem.readDirectory(path);
 
@@ -73,5 +93,7 @@ class Runtime {
       var module: Module = Module.fromString(code);
       module.boot();
     }
+
+    return files;
   }
 }
