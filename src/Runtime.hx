@@ -19,7 +19,7 @@ class Runtime {
   private static var classPaths: Array<String>;
   private static var libs: Array<String>;
 
-  public static function main(src: String, output: String, classPaths: Array<String>, libs: Array<String>) {
+  public static function main(src: String, output: String, classPaths: Array<String>, libs: Array<String>, onComplete: Void->Void) {
     ScriptMacros;
     CppiaObjectFactory;
 
@@ -58,6 +58,11 @@ class Runtime {
 
     recompile();
 
+    trace(onComplete);
+    if(onComplete != null) {
+      onComplete();
+    }
+
     IHx.main();
   }
 
@@ -93,7 +98,7 @@ class Runtime {
       var filePath: String = '${path}${file}';
       var code: String = File.getContent(filePath);
       var module: Module = Module.fromString(code);
-      module.boot();
+      module.run();
     }
 
     return files;
