@@ -5,6 +5,6 @@ class FooBar {
   }
 
   public function test() {
-    trace("success!");
+    trace("successssssssssss!");
   }
 }

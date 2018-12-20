@@ -1,5 +1,6 @@
 package ;
 
+import util.PathUtil;
 import core.CppiaObjectFactory;
 import core.ScriptMacros;
 import haxe.macro.Expr.Position;
@@ -67,8 +68,11 @@ class Runtime {
     return defines = value;
   }
 
+  public static function main():Void {
+    start("scripts", "out/", ["src", "common"], ["hscript"], null);
+  }
 
-  public static function main(src: String, output: String, classPaths: Array<String>, libs: Array<String>, onComplete: Array<String>->Void) {
+  public static function start(src: String, output: String, classPaths: Array<String>, libs: Array<String>, onComplete: Array<String>->Void) {
     ScriptMacros;
     CppiaObjectFactory;
 
@@ -107,7 +111,8 @@ class Runtime {
       return hscriptMacro.convert(ast);
     });
 
-    var files = recompile();
+    recompile();
+    loadAll();
 
     IHx.main();
   }
@@ -116,7 +121,6 @@ class Runtime {
     var compiler = new CPPIACompiler();
     var files: Array<String> = compiler.compileAll(src, output, classPaths, libs);
 
-    load();
     reloadClasses(files);
 
     if(completeCallback != null) {
@@ -127,28 +131,35 @@ class Runtime {
   }
 
   public static function reloadClasses(files: Array<String>): Void {
-    var variables = HScriptEval.interp.variables;
     for(file in files) {
-      var filename: String = StringTools.replace(file, ".hx", "");
-      var pack: String = StringTools.replace(filename, "/", ".");
-      var frags = pack.split(".");
-      var className = frags[frags.length - 1];
-      var clazz = Type.resolveClass(pack);
-      if(clazz != null) {
-        variables.set(className, clazz);
-      }
+      loadFile(file);
     }
   }
 
-  public static function load(): Array<String> {
+  public static function loadFile(file:String):Void {
+    var variables = HScriptEval.interp.variables;
+    var filePath: String = '${output}${PathUtil.getCPPIAPath(file)}.cppia';
+    var code: String = File.getContent(filePath);
+    var module: Module = Module.fromString(code);
+    module.run();
+
+    var filename: String = StringTools.replace(file, ".hx", "");
+    var pack: String = StringTools.replace(filename, "/", ".");
+    var frags = pack.split(".");
+    var className = frags[frags.length - 1];
+    var clazz = Type.resolveClass(pack);
+    if(clazz != null) {
+      variables.set(className, clazz);
+    }
+  }
+
+  public static function loadAll(): Array<String> {
     var path: String = output;
     var files: Array<String> = FileSystem.readDirectory(path);
 
     for(file in files) {
-      var filePath: String = '${path}${file}';
-      var code: String = File.getContent(filePath);
-      var module: Module = Module.fromString(code);
-      module.run();
+      var srcFile: String = PathUtil.cppiaToPath(file);
+      loadFile(srcFile);
     }
 
     return files;

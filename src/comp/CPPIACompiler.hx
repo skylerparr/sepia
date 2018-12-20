@@ -1,4 +1,7 @@
 package comp;
+import util.PathUtil;
+import haxe.crypto.Md5;
+import haxe.Json;
 import sys.io.File;
 import logging.LogLevels;
 import logging.TraceLogger;
@@ -8,6 +11,8 @@ import sys.io.Process;
 import sys.FileSystem;
 class CPPIACompiler {
   private static var logger: Logger;
+
+  private static inline var cacheFile: String = "/tmp/build_cache.json";
 
   private var classPath: String;
   private var additionalClassPaths: Array<String>;
@@ -25,6 +30,20 @@ class CPPIACompiler {
       trace(file);
     }
     return 0;
+  }
+
+  public function getCache(): Dynamic {
+    if(FileSystem.exists(cacheFile)) {
+      var data: String = File.getContent(cacheFile);
+      return Json.parse(data);
+    } else {
+      return {};
+    }
+  }
+
+  public function saveCache(cache: Dynamic): Void {
+    var data: String = Json.stringify(cache);
+    File.saveContent(cacheFile, data);
   }
 
   public function compileAll(path: String, out: String, classPaths: Array<String> = null, usrlibs: Array<String> = null): Array<String> {
@@ -70,9 +89,23 @@ class CPPIACompiler {
         exitCode = doCompileAll(relPath, newFiles);
       } else {
         var scriptPath: String = StringTools.replace(relPath, classPath, "");
+        logger.debug('full path: ${fullPath}');
         logger.debug('Path args: ${scriptPath}');
+
+        if(unchanged(fullPath)) {
+          continue;
+        }
+
         newFiles.push(scriptPath);
-        exitCode = compileFile('${scriptPath}');
+        exitCode = compileFile(scriptPath);
+
+        if(exitCode == 0) {
+          var contents: String = File.getContent(fullPath);
+          var contentsHash: String = Md5.encode(contents);
+          var cache: Dynamic = getCache();
+          Reflect.setField(cache, fullPath, contentsHash);
+          saveCache(cache);
+        }
       }
       if(exitCode == 1) {
         return 1;
@@ -82,8 +115,7 @@ class CPPIACompiler {
   }
 
   public function compileFile(filename: String): Int {
-    var filename: String = StringTools.replace(filename, ".hx", "");
-    var mainName: String = StringTools.replace(filename, "/", ".");
+    var mainName: String = PathUtil.getCPPIAPath(filename);
     var filePath: String = '${outputDir}${mainName}.cppia';
     if (FileSystem.exists(filePath)) {
       FileSystem.deleteFile(filePath);
@@ -107,5 +139,14 @@ class CPPIACompiler {
       logger.warn(output.getString(0, output.length));
     }
     return exitCode;
+  }
+
+  private function unchanged(path:String):Bool {
+    var cache: Dynamic = getCache();
+    var hash: String = Reflect.field(cache, path);
+    var contents: String = File.getContent(path);
+    var contentsHash: String = Md5.encode(contents);
+
+    return hash == contentsHash;
   }
 }
