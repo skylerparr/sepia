@@ -156,12 +156,14 @@ class Runtime {
   public static function loadAll(): Array<String> {
     var path: String = output;
     var files: Array<String> = FileSystem.readDirectory(path);
+    var retVal: Array<String> = [];
 
     for(file in files) {
       var srcFile: String = PathUtil.cppiaToPath(file);
+      retVal.push(srcFile);
       loadFile(srcFile);
     }
 
-    return files;
+    return retVal;
   }
 }
