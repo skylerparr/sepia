@@ -154,9 +154,11 @@ class Runtime {
     var retVal: Array<String> = [];
 
     for(file in files) {
-      var srcFile: String = PathUtil.cppiaToPath(file);
-      retVal.push(srcFile);
-      loadFile(srcFile);
+      if(StringTools.endsWith(file, ".cppia")) {
+        var srcFile: String = PathUtil.cppiaToPath(file);
+        retVal.push(srcFile);
+        loadFile(srcFile);
+      }
     }
 
     return retVal;

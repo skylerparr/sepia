@@ -13,7 +13,12 @@ import sys.FileSystem;
 class CPPIACompiler {
   private static var logger: Logger;
 
-  private static inline var cacheFile: String = "/tmp/build_cache.json";
+  @:isVar
+  private var cacheFile(get, never): String;
+
+  function get_cacheFile(): String {
+    return '${outputDir}.build_cache';
+  }
 
   private var classPath: String;
   private var additionalClassPaths: Array<String>;
@@ -168,9 +173,12 @@ class CPPIACompiler {
 
     var mainThread: Thread = Thread.current();
     var threads: Array<Thread> = [];
+    var counter: Int = 0;
     for(group in groups) {
+      counter++;
       var t: Thread = Thread.create(function() {
-        Sys.sleep(Math.random());
+        var sleepTime = (counter * 50 / 1000);
+        Sys.sleep(sleepTime);
         var ret: Array<String> = doCompileSync(group);
         mainThread.sendMessage(ret);
       });
