@@ -1,4 +1,5 @@
 package comp;
+import cpp.vm.Thread;
 import util.PathUtil;
 import haxe.crypto.Md5;
 import haxe.Json;
@@ -19,6 +20,8 @@ class CPPIACompiler {
   private var outputDir: String;
   private var libs: Array<String>;
 
+  public var numThreads: Int = 12;
+
   public function new() {
     TraceLogger.logLevel = LogLevels.INFO;
     logger = new TraceLogger();
@@ -27,7 +30,10 @@ class CPPIACompiler {
   public function clean(path: String): Int {
     var toDelete: Array<String> = FileSystem.readDirectory(path);
     for(file in toDelete) {
-      trace(file);
+      FileSystem.deleteFile('${path}${file}');
+    }
+    if(FileSystem.exists(cacheFile)) {
+      FileSystem.deleteFile(cacheFile);
     }
     return 0;
   }
@@ -70,48 +76,145 @@ class CPPIACompiler {
 
     FileSystem.createDirectory(outputDir);
 
-    var newFiles: Array<String> = [];
-    doCompileAll(path, newFiles);
+    var filesToCompile: Array<CompilationPaths> = [];
+    var classes: Array<String> = [];
+    gatherFilesToCompile(path, filesToCompile, classes);
 
-    return newFiles;
+    filesToCompile = findDependencies(filesToCompile, classes);
+    filesToCompile = filterUnique(filesToCompile);
+    logger.debug('filesToCompile: ${filesToCompile}');
+
+    var compiledFiles: Array<String> = doCompileAll(filesToCompile);
+
+    return compiledFiles;
   }
 
-  private function doCompileAll(path: String, newFiles: Array<String>): Int {
-    var exitCode: Int = 0;
-    var scriptsToCompile: Array<String> = FileSystem.readDirectory(path);
-    for (script in scriptsToCompile) {
+  private function gatherFilesToCompile(path: String, files: Array<CompilationPaths>, classes: Array<String>): Void {
+    var filesToCompile: Array<String> = FileSystem.readDirectory(path);
+    for (script in filesToCompile) {
       var relPath: String = path + '/' + script;
       logger.debug("relative path: " + relPath);
       var fullPath: String = FileSystem.absolutePath(relPath);
       logger.debug(fullPath);
       logger.debug(FileSystem.isDirectory(fullPath) + "");
       if(FileSystem.isDirectory(fullPath)) {
-        exitCode = doCompileAll(relPath, newFiles);
+        gatherFilesToCompile(relPath, files, classes);
       } else {
         var scriptPath: String = StringTools.replace(relPath, classPath, "");
         logger.debug('full path: ${fullPath}');
         logger.debug('Path args: ${scriptPath}');
 
-        if(unchanged(fullPath)) {
-          continue;
+        var pack: String = StringTools.replace(scriptPath, ".hx", "");
+        pack = StringTools.replace(pack, "/", ".");
+        classes.push(pack);
+        if(!unchanged(fullPath)) {
+          files.push({scriptPath: scriptPath, fullPath: fullPath});
         }
-
-        newFiles.push(scriptPath);
-        exitCode = compileFile(scriptPath);
-
-        if(exitCode == 0) {
-          var contents: String = File.getContent(fullPath);
-          var contentsHash: String = Md5.encode(contents);
-          var cache: Dynamic = getCache();
-          Reflect.setField(cache, fullPath, contentsHash);
-          saveCache(cache);
-        }
-      }
-      if(exitCode == 1) {
-        return 1;
       }
     }
-    return exitCode;
+  }
+
+  private function findDependencies(files: Array<CompilationPaths>, classes: Array<String>): Array<CompilationPaths> {
+    var retVal: Array<CompilationPaths> = [];
+    for(file in files) {
+      retVal.push(file);
+      var contents: String = File.getContent(file.fullPath);
+      for(classPack in classes) {
+        var frags: Array<String> = classPack.split(".");
+        var className: String = frags[frags.length - 1];
+        var regex: EReg = new EReg('.${className}.', 'g');
+        var match: Bool = regex.match(contents);
+        if(match) {
+          var scriptPath: String = StringTools.replace(classPack, ".", "/");
+          scriptPath = '${scriptPath}.hx';
+          var fullPath: String = FileSystem.absolutePath('${classPath}${scriptPath}');
+          retVal.push({scriptPath: scriptPath, fullPath: fullPath});
+        }
+      }
+    }
+    return retVal;
+  }
+
+  private function filterUnique(inFiles: Array<CompilationPaths>): Array<CompilationPaths> {
+    var retVal: Array<CompilationPaths> = [];
+    for(file in inFiles) {
+      if(!contains(retVal, file)) {
+        retVal.push(file);
+      }
+    }
+    return retVal;
+  }
+
+  private function contains(array: Array<CompilationPaths>, toFind: CompilationPaths): Bool {
+    for(item in array) {
+      if(item.scriptPath == toFind.scriptPath) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private function doCompileAll(toCompile: Array<CompilationPaths>): Array<String> {
+    var retVal: Array<String> = [];
+    var groups: Array<Array<CompilationPaths>> = [];
+    for(i in 0...numThreads) {
+      groups.push([]);
+    }
+    var counter: Int = 0;
+    for(item in toCompile) {
+      var index: Int = (counter++) % numThreads;
+      groups[index].push(item);
+    }
+
+    var mainThread: Thread = Thread.current();
+    var threads: Array<Thread> = [];
+    for(group in groups) {
+      var t: Thread = Thread.create(function() {
+        var ret: Array<String> = doCompileSync(group);
+        mainThread.sendMessage(ret);
+      });
+    }
+
+    var groupResults: Array<Array<String>> = [];
+    while(groupResults.length < numThreads) {
+      var result: Dynamic = cast Thread.readMessage(true);
+      groupResults.push(result);
+    }
+
+    for(groupResult in groupResults) {
+      for(result in groupResult) {
+        retVal.push(result);
+      }
+    }
+
+    return retVal;
+  }
+
+  private function doCompileSync(toCompile: Array<CompilationPaths>): Array<String> {
+    var exitCode: Int = 0;
+    var retVal: Array<String> = [];
+    for(script in toCompile) {
+      switch(script) {
+        case {scriptPath: scriptPath, fullPath: fullPath}:
+          exitCode = compileFile(scriptPath);
+          retVal.push(scriptPath);
+          if(exitCode == 0) {
+            var contents: String = File.getContent(fullPath);
+            var contentsHash: String = Md5.encode(contents);
+            var cache: Dynamic = getCache();
+            Reflect.setField(cache, fullPath, contentsHash);
+            saveCache(cache);
+          }
+        case _:
+          logger.warn("Unable to match on datastructure");
+          break;
+      }
+
+      if(exitCode == 1) {
+        return retVal;
+      }
+    }
+    return retVal;
   }
 
   public function compileFile(filename: String): Int {

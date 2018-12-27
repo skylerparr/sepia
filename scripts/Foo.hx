@@ -9,4 +9,8 @@ class Foo implements MasterFoo {
   public function bar(): String {
     return "just bar this time";
   }
+
+  public static function getFoo(): String {
+    return "foo";
+  }
 }

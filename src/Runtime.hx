@@ -86,6 +86,7 @@ class Runtime {
 
     variables.set("recompile", recompile);
     variables.set("r", recompile);
+    variables.set("clean", clean);
     variables.set("Type", Type);
     variables.set("Reflect", Reflect);
     variables.set("Macro", hscript.Macro);
@@ -121,19 +122,13 @@ class Runtime {
     var compiler = new CPPIACompiler();
     var files: Array<String> = compiler.compileAll(src, output, classPaths, libs);
 
-    reloadClasses(files);
+    files = loadAll();
 
     if(completeCallback != null) {
       completeCallback(files);
     }
 
     return files;
-  }
-
-  public static function reloadClasses(files: Array<String>): Void {
-    for(file in files) {
-      loadFile(file);
-    }
   }
 
   public static function loadFile(file:String):Void {
@@ -165,5 +160,9 @@ class Runtime {
     }
 
     return retVal;
+  }
+
+  public static function clean(): Int {
+    return new CPPIACompiler().clean(output);
   }
 }
