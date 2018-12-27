@@ -170,6 +170,7 @@ class CPPIACompiler {
     var threads: Array<Thread> = [];
     for(group in groups) {
       var t: Thread = Thread.create(function() {
+        Sys.sleep(Math.random());
         var ret: Array<String> = doCompileSync(group);
         mainThread.sendMessage(ret);
       });
@@ -177,7 +178,7 @@ class CPPIACompiler {
 
     var groupResults: Array<Array<String>> = [];
     while(groupResults.length < numThreads) {
-      var result: Dynamic = cast Thread.readMessage(true);
+      var result: Array<String> = Thread.readMessage(true);
       groupResults.push(result);
     }
 
