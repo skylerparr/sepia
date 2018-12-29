@@ -132,7 +132,6 @@ class Runtime {
   }
 
   public static function loadFile(file:String):Void {
-    var variables = HScriptEval.interp.variables;
     var filePath: String = '${output}${PathUtil.getCPPIAPath(file)}.cppia';
     var code: String = File.getContent(filePath);
     var module: Module = Module.fromString(code);
@@ -144,6 +143,7 @@ class Runtime {
     var className = frags[frags.length - 1];
     var clazz = Type.resolveClass(pack);
     if(clazz != null) {
+      var variables = HScriptEval.interp.variables;
       variables.set(className, clazz);
     }
   }
