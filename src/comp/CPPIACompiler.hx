@@ -89,6 +89,8 @@ class CPPIACompiler {
     filesToCompile = filterUnique(filesToCompile);
     logger.debug('filesToCompile: ${filesToCompile}');
 
+    logger.info('compiling ${filesToCompile.length} files...');
+
     var compiledFiles: Array<String> = doCompileAll(filesToCompile);
 
     return compiledFiles;
@@ -232,7 +234,7 @@ class CPPIACompiler {
     if (FileSystem.exists(filePath)) {
       FileSystem.deleteFile(filePath);
     }
-    logger.info('${filePath}');
+    logger.debug('${filePath}');
     var compileArgs: Array<String> =
     ["-main", mainName, "-cp", classPath, "-cppia", filePath];
     for(cp in additionalClassPaths) {

@@ -11,4 +11,8 @@ class Earth {
   public static function getBytes(): Bytes {
     return Bytes.alloc(1);
   }
+
+  public function foo(): Void {
+    trace('yay');
+  }
 }

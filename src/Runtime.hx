@@ -1,18 +1,18 @@
 package ;
 
-import util.PathUtil;
-import core.CppiaObjectFactory;
-import core.ScriptMacros;
-import haxe.macro.Expr.Position;
+import hscript.Macro;
 import hscript.Parser;
 import hscript.Interp;
-import hscript.Macro;
 import comp.CPPIACompiler;
+import core.CppiaObjectFactory;
+import core.ScriptMacros;
 import cpp.cppia.Module;
+import haxe.macro.Expr.Position;
 import ihx.HScriptEval;
 import ihx.IHx;
 import sys.FileSystem;
 import sys.io.File;
+import util.PathUtil;
 class Runtime {
 
   @:isVar
@@ -119,6 +119,7 @@ class Runtime {
   }
 
   public static function recompile(): Array<String> {
+    clean();
     var compiler = new CPPIACompiler();
     var files: Array<String> = compiler.compileAll(src, output, classPaths, libs);
 
