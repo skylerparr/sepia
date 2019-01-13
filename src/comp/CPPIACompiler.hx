@@ -33,12 +33,14 @@ class CPPIACompiler {
   }
 
   public function clean(path: String): Int {
-    var toDelete: Array<String> = FileSystem.readDirectory(path);
-    for(file in toDelete) {
-      FileSystem.deleteFile('${path}${file}');
-    }
-    if(FileSystem.exists(cacheFile)) {
-      FileSystem.deleteFile(cacheFile);
+    if(FileSystem.exists(path)) {
+      var toDelete: Array<String> = FileSystem.readDirectory(path);
+      for(file in toDelete) {
+        FileSystem.deleteFile('${path}${file}');
+      }
+      if(FileSystem.exists(cacheFile)) {
+        FileSystem.deleteFile(cacheFile);
+      }
     }
     return 0;
   }
