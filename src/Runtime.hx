@@ -165,6 +165,24 @@ class Runtime {
     return retVal;
   }
 
+  public static function compile(file: String, onComplete: String->Void): Int {
+    var compiler = new CPPIACompiler();
+    compiler.classPath = src;
+    compiler.outputDir = output;
+    compiler.additionalClassPaths = classPaths;
+    compiler.libs = libs;
+
+    var result: Int = compiler.compileFile(file);
+    if(result == 1) {
+      loadAll();
+      if(onComplete != null) {
+        onComplete(file);
+      }
+      return 1;
+    }
+    return 0;
+  }
+
   public static function clean(): Int {
     return new CPPIACompiler().clean(output);
   }

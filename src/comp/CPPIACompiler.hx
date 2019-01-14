@@ -20,12 +20,14 @@ class CPPIACompiler {
     return '${outputDir}.build_cache';
   }
 
-  private var classPath: String;
-  private var additionalClassPaths: Array<String>;
-  private var outputDir: String;
-  private var libs: Array<String>;
+  public var classPath: String;
+  public var additionalClassPaths: Array<String>;
+  public var outputDir: String;
+  public var libs: Array<String>;
 
   public var numThreads: Int = 12;
+
+  private static var cache: Dynamic = null;
 
   public function new() {
     TraceLogger.logLevel = LogLevels.INFO;
@@ -42,13 +44,19 @@ class CPPIACompiler {
         FileSystem.deleteFile(cacheFile);
       }
     }
+    cache = null;
     return 0;
   }
 
   public function getCache(): Dynamic {
+    if(cache != null) {
+      return cache;
+    }
+
     if(FileSystem.exists(cacheFile)) {
       var data: String = File.getContent(cacheFile);
-      return Json.parse(data);
+      cache = Json.parse(data);
+      return cache;
     } else {
       return {};
     }
@@ -62,6 +70,7 @@ class CPPIACompiler {
   public function compileAll(path: String, out: String, classPaths: Array<String> = null, usrlibs: Array<String> = null): Array<String> {
     classPath = path + "/";
     outputDir = out;
+    getCache();
 
     if(classPaths == null) {
       classPaths = [];
@@ -104,8 +113,8 @@ class CPPIACompiler {
       var relPath: String = path + '/' + script;
       logger.debug("relative path: " + relPath);
       var fullPath: String = FileSystem.absolutePath(relPath);
-      logger.debug(fullPath);
-      logger.debug(FileSystem.isDirectory(fullPath) + "");
+      logger.debug('fullPath: ${fullPath}');
+      logger.debug("full path is directory? " + FileSystem.isDirectory(fullPath) + "");
       if(FileSystem.isDirectory(fullPath)) {
         gatherFilesToCompile(relPath, files, classes);
       } else {
@@ -236,7 +245,7 @@ class CPPIACompiler {
     if (FileSystem.exists(filePath)) {
       FileSystem.deleteFile(filePath);
     }
-    logger.debug('${filePath}');
+    logger.debug('CompileFile file path: ${filePath}');
     var compileArgs: Array<String> =
     ["-main", mainName, "-cp", classPath, "-cppia", filePath];
     for(cp in additionalClassPaths) {
@@ -246,7 +255,7 @@ class CPPIACompiler {
       compileArgs.push(lib);
     }
 
-    logger.debug(compileArgs + "");
+    logger.debug("Compiler Args: " + compileArgs + "");
     var p: Process = new Process("haxe", compileArgs);
     var stdout = p.stderr;
     var output: Bytes = stdout.readAll();
