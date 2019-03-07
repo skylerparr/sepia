@@ -14,68 +14,30 @@ import sys.FileSystem;
 import sys.io.File;
 import util.PathUtil;
 class Runtime {
-
   @:isVar
-  public static var src(get, set):String;
+  public static var applicationName(default, default): String;
   @:isVar
-  public static var output(get, set):String;
+  public static var src(default, default):String;
   @:isVar
-  public static var classPaths(get, set):Array<String>;
+  public static var output(default, default):String;
   @:isVar
-  public static var libs(get, set):Array<String>;
+  public static var classPaths(default, default):Array<String>;
   @:isVar
-  public static var defines(get, set): Array<String>;
+  public static var libs(default, default):Array<String>;
+  @:isVar
+  public static var defines(default, default): Array<String>;
 
   private static var completeCallback: Array<String>->Void;
 
-  static function get_src():String {
-    return src;
-  }
-
-  static function set_src(value:String):String {
-    return src = value;
-  }
-
-  static function get_output():String {
-    return output;
-  }
-
-  static function set_output(value:String):String {
-    return output = value;
-  }
-
-  static function get_classPaths():Array<String> {
-    return classPaths;
-  }
-
-  static function set_classPaths(value:Array<String>):Array<String> {
-    return classPaths = value;
-  }
-
-  static function get_libs():Array<String> {
-    return libs;
-  }
-
-  static function set_libs(value:Array<String>):Array<String> {
-    return libs = value;
-  }
-
-  static function get_defines():Array<String> {
-    return defines;
-  }
-
-  static function set_defines(value:Array<String>):Array<String> {
-    return defines = value;
-  }
-
   public static function main():Void {
-    start("scripts", "out/", ["src", "common"], ["hscript"], null);
+    start("Sepia", "scripts", "out/", ["src", "common"], ["hscript"], null);
   }
 
-  public static function start(src: String, output: String, classPaths: Array<String>, libs: Array<String>, onComplete: Array<String>->Void) {
+  public static function start(applicationName: String, src: String, output: String, classPaths: Array<String>, libs: Array<String>, onComplete: Array<String>->Void) {
     ScriptMacros;
     CppiaObjectFactory;
 
+    Runtime.applicationName = applicationName;
     Runtime.src = src;
     Runtime.output = output;
     Runtime.classPaths = classPaths;
@@ -120,7 +82,7 @@ class Runtime {
 
   public static function recompile(): Array<String> {
     var compiler = new CPPIACompiler();
-    var files: Array<String> = compiler.compileAll(src, output, classPaths, libs);
+    var files: Array<String> = compiler.compileAll(applicationName, src, output, classPaths, libs);
 
     loadAll();
 
@@ -152,12 +114,12 @@ class Runtime {
   }
 
   public static function loadAll(): Array<String> {
-    var filePath: String = '${output}Application.cppia';
+    var filePath: String = '${output}${applicationName}.cppia';
     var code: String = File.getContent(filePath);
     var module: Module = Module.fromString(code);
     module.run();
 
-    return ['Application.hx'];
+    return ['${applicationName}.hx'];
   }
 
   public static function compile(file: String, onComplete: String->Void): Int {

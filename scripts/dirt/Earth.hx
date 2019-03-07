@@ -4,7 +4,7 @@ import haxe.io.Bytes;
 @:build(core.ScriptMacros.script())
 class Earth {
   public static function getEarth(): String {
-    trace("getting earths");
+    trace("getting earth");
     return "earth";
   }
 

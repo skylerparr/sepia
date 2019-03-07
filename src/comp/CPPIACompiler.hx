@@ -25,8 +25,9 @@ class CPPIACompiler {
   public var additionalClassPaths: Array<String>;
   public var outputDir: String;
   public var libs: Array<String>;
+  public var applicationName: String;
 
-  public var numThreads: Int = 12;
+  public var numThreads: Int = 1;
 
   private static var cache: Dynamic = null;
 
@@ -68,9 +69,10 @@ class CPPIACompiler {
     File.saveContent(cacheFile, data);
   }
 
-  public function compileAll(path: String, out: String, classPaths: Array<String> = null, usrlibs: Array<String> = null): Array<String> {
+  public function compileAll(applicationName: String, path: String, out: String, classPaths: Array<String> = null, usrlibs: Array<String> = null): Array<String> {
     classPath = path + "/";
     outputDir = out;
+    this.applicationName = applicationName;
     getCache();
 
     if(classPaths == null) {
@@ -109,8 +111,8 @@ class CPPIACompiler {
 
       generateApplicationFile(filesToCompile);
 
-      var compiledFiles: Array<String> = doCompileAll([{scriptPath: 'Application.hx', fullPath: '${classPath}Application.hx'}]);
-      FileSystem.deleteFile('${classPath}Application.hx');
+      var compiledFiles: Array<String> = doCompileAll([{scriptPath: '${applicationName}.hx', fullPath: '${classPath}${applicationName}.hx'}]);
+      FileSystem.deleteFile('${classPath}${applicationName}.hx');
       compiledFiles = filesToCompile.map(function(map: Dynamic): String {
         return map.scriptPath;
       });
@@ -122,7 +124,7 @@ class CPPIACompiler {
   }
 
   private var template: String = 'package;
-class Application {
+class ::applicationName:: {
   public static function main() {}
 
   public function new() {::foreach classes::
@@ -139,8 +141,8 @@ class Application {
       classes.push({className: className});
     }
     var t: Template = new Template(template);
-    var content: String = t.execute({classes: classes});
-    File.saveContent('${classPath}Application.hx', content);
+    var content: String = t.execute({applicationName: applicationName, classes: classes});
+    File.saveContent('${classPath}${applicationName}.hx', content);
   }
 
   private function gatherFilesToCompile(path: String, files: Array<CompilationPaths>, classes: Array<String>): Void {
