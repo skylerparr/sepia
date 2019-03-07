@@ -98,13 +98,19 @@ class CPPIACompiler {
 
     filesToCompile = findDependencies(filesToCompile, classes);
     filesToCompile = filterUnique(filesToCompile);
-    logger.debug('filesToCompile: ${filesToCompile}');
 
-    logger.info('compiling ${filesToCompile.length} files...');
-
-    var compiledFiles: Array<String> = doCompileAll(filesToCompile);
-
-    return compiledFiles;
+    if(filesToCompile.length > 0) {
+      clean(outputDir);
+      filesToCompile = [];
+      gatherFilesToCompile(path, filesToCompile, classes);
+      logger.debug('filesToCompile: ${filesToCompile}');
+      logger.info('compiling ${filesToCompile.length} files...');
+      var compiledFiles: Array<String> = doCompileAll(filesToCompile);
+      return compiledFiles;
+    } else {
+      logger.info('Up to date');
+      return [];
+    }
   }
 
   private function gatherFilesToCompile(path: String, files: Array<CompilationPaths>, classes: Array<String>): Void {
@@ -190,7 +196,7 @@ class CPPIACompiler {
     for(group in groups) {
       counter++;
       var t: Thread = Thread.create(function() {
-        var sleepTime = (counter * 50 / 1000);
+        var sleepTime = (counter * 50 / 10000);
         Sys.sleep(sleepTime);
         var ret: Array<String> = doCompileSync(group);
         mainThread.sendMessage(ret);

@@ -119,7 +119,6 @@ class Runtime {
   }
 
   public static function recompile(): Array<String> {
-    clean();
     var compiler = new CPPIACompiler();
     var files: Array<String> = compiler.compileAll(src, output, classPaths, libs);
 
