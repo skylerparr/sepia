@@ -9,7 +9,7 @@ import api.MasterBar;
 class Bar implements MasterBar {
 
   public function new() {
-    trace("new");
+    trace("new a");
   }
 
   public function getFoo():MasterFoo {

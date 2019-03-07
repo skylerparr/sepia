@@ -1,4 +1,5 @@
 package comp;
+import haxe.Template;
 import cpp.vm.Thread;
 import util.PathUtil;
 import haxe.crypto.Md5;
@@ -105,12 +106,41 @@ class CPPIACompiler {
       gatherFilesToCompile(path, filesToCompile, classes);
       logger.debug('filesToCompile: ${filesToCompile}');
       logger.info('compiling ${filesToCompile.length} files...');
-      var compiledFiles: Array<String> = doCompileAll(filesToCompile);
+
+      generateApplicationFile(filesToCompile);
+
+      var compiledFiles: Array<String> = doCompileAll([{scriptPath: 'Application.hx', fullPath: '${classPath}Application.hx'}]);
+      FileSystem.deleteFile('${classPath}Application.hx');
+      compiledFiles = filesToCompile.map(function(map: Dynamic): String {
+        return map.scriptPath;
+      });
       return compiledFiles;
     } else {
       logger.info('Up to date');
       return [];
     }
+  }
+
+  private var template: String = 'package;
+class Application {
+  public static function main() {}
+
+  public function new() {::foreach classes::
+    ::className::;::end::
+  }
+}
+';
+
+  private function generateApplicationFile(files: Array<Dynamic>): Void {
+    var classes: Array<Dynamic> = [];
+    for(file in files) {
+      var filename: String = StringTools.replace(file.scriptPath, ".hx", "");
+      var className: String = StringTools.replace(filename, "/", ".");
+      classes.push({className: className});
+    }
+    var t: Template = new Template(template);
+    var content: String = t.execute({classes: classes});
+    File.saveContent('${classPath}Application.hx', content);
   }
 
   private function gatherFilesToCompile(path: String, files: Array<CompilationPaths>, classes: Array<String>): Void {

@@ -122,7 +122,11 @@ class Runtime {
     var compiler = new CPPIACompiler();
     var files: Array<String> = compiler.compileAll(src, output, classPaths, libs);
 
-    files = loadAll();
+    loadAll();
+
+    for(file in files) {
+      loadFile(file);
+    }
 
     if(completeCallback != null) {
       completeCallback(files);
@@ -132,36 +136,28 @@ class Runtime {
   }
 
   public static function loadFile(file:String):Void {
-    var filePath: String = '${output}${PathUtil.getCPPIAPath(file)}.cppia';
-    var code: String = File.getContent(filePath);
-    var module: Module = Module.fromString(code);
-    module.run();
-
     var filename: String = StringTools.replace(file, ".hx", "");
     var pack: String = StringTools.replace(filename, "/", ".");
     var frags = pack.split(".");
     var className = frags[frags.length - 1];
     var clazz = Type.resolveClass(pack);
     if(clazz != null) {
+      if(Reflect.hasField(clazz, 'main')) {
+        var func = Reflect.field(clazz, 'main');
+        func();
+      }
       var variables = HScriptEval.interp.variables;
       variables.set(className, clazz);
     }
   }
 
   public static function loadAll(): Array<String> {
-    var path: String = output;
-    var files: Array<String> = FileSystem.readDirectory(path);
-    var retVal: Array<String> = [];
+    var filePath: String = '${output}Application.cppia';
+    var code: String = File.getContent(filePath);
+    var module: Module = Module.fromString(code);
+    module.run();
 
-    for(file in files) {
-      if(StringTools.endsWith(file, ".cppia")) {
-        var srcFile: String = PathUtil.cppiaToPath(file);
-        retVal.push(srcFile);
-        loadFile(srcFile);
-      }
-    }
-
-    return retVal;
+    return ['Application.hx'];
   }
 
   public static function compile(file: String, onComplete: String->Void): Int {
