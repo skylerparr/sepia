@@ -111,7 +111,8 @@ class CPPIACompiler {
 
       generateApplicationFile(filesToCompile);
 
-      var compiledFiles: Array<String> = doCompileAll([{scriptPath: '${applicationName}.hx', fullPath: '${classPath}${applicationName}.hx'}]);
+//      var compiledFiles: Array<String> = doCompileAll([{scriptPath: '${applicationName}.hx', fullPath: '${classPath}${applicationName}.hx'}]);
+      var compiledFiles: Array<String> = doCompileSync([{scriptPath: '${applicationName}.hx', fullPath: '${classPath}${applicationName}.hx'}]);
       FileSystem.deleteFile('${classPath}${applicationName}.hx');
       compiledFiles = filesToCompile.map(function(map: Dynamic): String {
         return map.scriptPath;
