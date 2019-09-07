@@ -1,97 +1,62 @@
 package ;
 
-import hscript.Macro;
 import hscript.Parser;
 import hscript.Interp;
-import comp.CPPIACompiler;
-import core.CppiaObjectFactory;
-import core.ScriptMacros;
-import cpp.cppia.Module;
 import haxe.macro.Expr.Position;
+import hscript.Macro;
+import core.ScriptMacros;
+import core.CppiaObjectFactory;
+import project.DefaultProjectConfig;
+import project.ProjectConfig;
+import comp.CPPIACompiler;
+import cpp.cppia.Module;
 import ihx.HScriptEval;
 import ihx.IHx;
-import sys.FileSystem;
 import sys.io.File;
-import util.PathUtil;
 class Runtime {
-  @:isVar
-  public static var applicationName(default, default): String;
-  @:isVar
-  public static var src(default, default):String;
-  @:isVar
-  public static var output(default, default):String;
-  @:isVar
-  public static var classPaths(default, default):Array<String>;
-  @:isVar
-  public static var libs(default, default):Array<String>;
-  @:isVar
-  public static var defines(default, default): Array<String>;
-
-  private static var completeCallback: Array<String>->Void;
-
   public static function main():Void {
-    start("Sepia", "scripts", "out/", ["src", "common"], ["hscript"], null);
+    var project: ProjectConfig = new DefaultProjectConfig("Sepia", 'scripts', 'out', ['src'], ['hscript-plus']);
+    compileProject(project);
+    start();
   }
 
-  public static function start(applicationName: String, src: String, output: String, classPaths: Array<String>, libs: Array<String>, onComplete: Array<String>->Void) {
+  public static function start() {
     ScriptMacros;
     CppiaObjectFactory;
-
-    Runtime.applicationName = applicationName;
-    Runtime.src = src;
-    Runtime.output = output;
-    Runtime.classPaths = classPaths;
-    Runtime.libs = libs;
-    Runtime.completeCallback = onComplete;
-
-    var variables = HScriptEval.interp.variables;
-
-    variables.set("recompile", recompile);
-    variables.set("r", recompile);
-    variables.set("clean", clean);
-    variables.set("Type", Type);
-    variables.set("Reflect", Reflect);
-    variables.set("Macro", hscript.Macro);
-    variables.set("Parser", hscript.Parser);
-    variables.set("Interp", hscript.Interp);
-
-    var parser: Parser = new Parser();
-    var interp: Interp = new Interp();
-    var pos: Position = {file: null, min: 0, max: 12}
-    var hscriptMacro: Macro = new Macro(pos);
-
-    variables.set("eval", function(s: String): Dynamic {
-      var ast = parser.parseString(s);
-      return HScriptEval.interp.execute(ast);
-    });
-
-    variables.set("ast", function(s: String): Dynamic {
-      return parser.parseString(s);
-    });
-
-    variables.set("macro", function(s: String): Dynamic {
-      var ast = parser.parseString(s);
-      return hscriptMacro.convert(ast);
-    });
-
-    recompile();
-    loadAll();
-
     IHx.main();
   }
 
-  public static function recompile(): Array<String> {
+  public static function compileProject(project: ProjectConfig): Array<String> {
+    //All this needs to happen or it'll fail to compile
+    {
+      var variables = HScriptEval.interp.variables;
+      variables.set("Type", Type);
+      variables.set("Reflect", Reflect);
+      variables.set("Macro", hscript.Macro);
+      variables.set("Parser", hscript.Parser);
+      variables.set("Interp", hscript.Interp);
+    }
+
+    var applicationName: String = project.applicationName;
+    var src: String = project.srcPath;
+    var output: String = project.outputPath;
+    var classPaths: Array<String> = project.classPaths;
+    var libs: Array<String> = project.libsPaths;
+    
     var compiler = new CPPIACompiler();
     var files: Array<String> = compiler.compileAll(applicationName, src, output, classPaths, libs);
 
-    loadAll();
+    loadAll(project);
 
     for(file in files) {
       loadFile(file);
     }
 
-    if(completeCallback != null) {
-      completeCallback(files);
+    var afterCompileCallbacks: Array<Array<String>->Void> = project.afterCompileCallbacks;
+    if(afterCompileCallbacks != null) {
+      for(callback in afterCompileCallbacks) {
+        callback(files);
+      }
     }
 
     return files;
@@ -113,8 +78,10 @@ class Runtime {
     }
   }
 
-  public static function loadAll(): Array<String> {
-    var filePath: String = '${output}${applicationName}.cppia';
+  public static function loadAll(project: ProjectConfig): Array<String> {
+    var applicationName: String = project.applicationName;
+    var filePath: String = '${project.outputPath}${applicationName}.cppia';
+
     var code: String = File.getContent(filePath);
     var module: Module = Module.fromString(code);
     module.run();
@@ -124,14 +91,15 @@ class Runtime {
 
   public static function compile(file: String, onComplete: String->Void): Int {
     var compiler = new CPPIACompiler();
-    compiler.classPath = src;
-    compiler.outputDir = output;
-    compiler.additionalClassPaths = classPaths;
-    compiler.libs = libs;
+    compiler.classPath = "";
+    compiler.outputDir = "";
+    compiler.additionalClassPaths = [];
+    compiler.libs = [];
 
     var result: Int = compiler.compileFile(file);
     if(result == 1) {
-      loadAll();
+      var project: ProjectConfig = new DefaultProjectConfig("NONE", file, "", [], []);
+      loadAll(project);
       if(onComplete != null) {
         onComplete(file);
       }
@@ -140,7 +108,7 @@ class Runtime {
     return 0;
   }
 
-  public static function clean(): Int {
-    return new CPPIACompiler().clean(output);
+  public static function clean(project: ProjectConfig): Int {
+    return new CPPIACompiler().clean(project.outputPath);
   }
 }
