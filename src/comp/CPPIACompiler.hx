@@ -128,7 +128,7 @@ class CPPIACompiler {
 class ::applicationName:: {
   public static function main() {}
 
-  public static function classes(): Array<Class<Dynamic>> {
+  public static function classes(): Dynamic {
     return [::classes::];
   }
 }
