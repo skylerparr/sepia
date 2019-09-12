@@ -1,9 +1,5 @@
 package ;
 
-import hscript.Parser;
-import hscript.Interp;
-import haxe.macro.Expr.Position;
-import hscript.Macro;
 import core.ScriptMacros;
 import core.CppiaObjectFactory;
 import project.DefaultProjectConfig;

@@ -128,21 +128,21 @@ class CPPIACompiler {
 class ::applicationName:: {
   public static function main() {}
 
-  public function new() {::foreach classes::
-    ::className::;::end::
+  public static function classes(): Array<Class<Dynamic>> {
+    return [::classes::];
   }
 }
 ';
 
-  private function generateApplicationFile(files: Array<Dynamic>): Void {
-    var classes: Array<Dynamic> = [];
+  private function generateApplicationFile(files: Array<CompilationPaths>): Void {
+    var classes: Array<String> = [];
     for(file in files) {
       var filename: String = StringTools.replace(file.scriptPath, ".hx", "");
       var className: String = StringTools.replace(filename, "/", ".");
-      classes.push({className: className});
+      classes.push(className);
     }
     var t: Template = new Template(template);
-    var content: String = t.execute({applicationName: applicationName, classes: classes});
+    var content: String = t.execute({applicationName: applicationName, classes: classes.join(',')});
     File.saveContent('${classPath}${applicationName}.hx', content);
   }
 
