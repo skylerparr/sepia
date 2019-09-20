@@ -69,10 +69,10 @@ class CPPIACompiler {
     File.saveContent(cacheFile, data);
   }
 
-  public function compileAll(applicationName: String, path: String, out: String, classPaths: Array<String> = null, usrlibs: Array<String> = null): Array<String> {
+  public function compileAll(appName: String, path: String, out: String, classPaths: Array<String> = null, usrlibs: Array<String> = null): Array<String> {
     classPath = path + "/";
     outputDir = out;
-    this.applicationName = applicationName;
+    this.applicationName = '${appName}ClassIncludes';
     getCache();
 
     if(classPaths == null) {

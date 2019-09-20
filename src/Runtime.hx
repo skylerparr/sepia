@@ -48,6 +48,7 @@ class Runtime {
       loadFile(file);
     }
 
+    trace("calling after compile callbacks");
     var afterCompileCallbacks: Array<Array<String>->Void> = project.afterCompileCallbacks;
     if(afterCompileCallbacks != null) {
       for(callback in afterCompileCallbacks) {
@@ -76,7 +77,8 @@ class Runtime {
 
   public static function loadAll(project: ProjectConfig): Array<String> {
     var applicationName: String = project.applicationName;
-    var filePath: String = '${project.outputPath}${applicationName}.cppia';
+    // FIXME: Adding the suffix 'ClassIncludes' is duplicated in the CPPIA compile. Neet to unify.
+    var filePath: String = '${project.outputPath}${applicationName}ClassIncludes.cppia';
 
     var code: String = File.getContent(filePath);
     var module: Module = Module.fromString(code);
