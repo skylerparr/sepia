@@ -48,7 +48,6 @@ class Runtime {
       loadFile(file);
     }
 
-    trace("calling after compile callbacks");
     var afterCompileCallbacks: Array<Array<String>->Void> = project.afterCompileCallbacks;
     if(afterCompileCallbacks != null) {
       for(callback in afterCompileCallbacks) {
