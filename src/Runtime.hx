@@ -22,6 +22,10 @@ class Runtime {
     IHx.main();
   }
 
+  public static function stop(): Void {
+    IHx.stop();
+  }
+
   public static function compileProject(project: ProjectConfig): Array<String> {
     //All this needs to happen or it'll fail to compile
     {
