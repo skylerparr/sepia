@@ -83,6 +83,9 @@ class Runtime {
     // FIXME: Adding the suffix 'ClassIncludes' is duplicated in the CPPIA compile. Neet to unify.
     var filePath: String = '${project.outputPath}${applicationName}ClassIncludes.cppia';
 
+    if(!sys.FileSystem.exists(filePath)) {
+      return [];
+    }
     var code: String = File.getContent(filePath);
     var module: Module = Module.fromString(code);
     module.run();
