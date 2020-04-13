@@ -286,7 +286,7 @@ class ::applicationName:: {
     }
     logger.debug('CompileFile file path: ${filePath}');
     var compileArgs: Array<String> =
-    ["-main", mainName, "-cp", classPath, "-cppia", filePath, '-D', 'scriptable'];
+    ["-main", mainName, "-cp", classPath, "-cppia", filePath, '-D', 'scriptable', '-D', 'hscriptPos'];
     for(cp in additionalClassPaths) {
       compileArgs.push(cp);
     }
