@@ -1,6 +1,6 @@
 package comp;
 import haxe.Template;
-import cpp.vm.Thread;
+import sys.thread.Thread;
 import util.PathUtil;
 import haxe.crypto.Md5;
 import haxe.Json;
@@ -286,7 +286,8 @@ class ::applicationName:: {
     }
     logger.debug('CompileFile file path: ${filePath}');
     var compileArgs: Array<String> =
-    ["-main", mainName, "-cp", classPath, "-cppia", filePath, '-D', 'scriptable', '-D', 'hscriptPos'];
+    ["-main", mainName, "-cp", classPath, "-cppia", filePath, '-D', 'scriptable', '-D', 'hscriptPos',
+      "-debug"];
     for(cp in additionalClassPaths) {
       compileArgs.push(cp);
     }

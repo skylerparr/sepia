@@ -1,5 +1,8 @@
 package ;
 
+import cpp.cppia.Host;
+import haxe.io.Bytes;
+import haxe.io.BytesData;
 import core.ScriptMacros;
 import core.CppiaObjectFactory;
 import project.DefaultProjectConfig;
@@ -13,6 +16,7 @@ class Runtime {
   public static function main():Void {
     var project: ProjectConfig = new DefaultProjectConfig("Sepia", 'scripts', 'out', ['src'], ['hscript-plus']);
     compileProject(project);
+    Host.enableJit(true);
     start();
   }
 
@@ -93,6 +97,19 @@ class Runtime {
     return ['${applicationName}.hx'];
   }
 
+  public static function loadPath(project: ProjectConfig, filePath: String): String {
+    var filePath: String = '${project.outputPath}${filePath}.cppia';
+
+    if(!sys.FileSystem.exists(filePath)) {
+      return "Not Found";
+    }
+    var code: String = File.getContent(filePath);
+    var module: Module = Module.fromString(code);
+    module.run();
+
+    return filePath;
+  }
+
   public static function compile(file: String, onComplete: String->Void): Int {
     var compiler = new CPPIACompiler();
     compiler.classPath = "";
@@ -107,9 +124,8 @@ class Runtime {
       if(onComplete != null) {
         onComplete(file);
       }
-      return 1;
     }
-    return 0;
+    return result;
   }
 
   public static function clean(project: ProjectConfig): Int {
